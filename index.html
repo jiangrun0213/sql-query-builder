@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL查询构建器</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SQL查询构建器</h1>
+            <p>简化SQL查询语句的编写</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 数据库连接配置 -->
+            <div class="section">
+                <h2>数据库连接配置</h2>
+                <div class="form-group">
+                    <label for="dbType">数据库类型:</label>
+                    <select id="dbType">
+                        <option value="mysql">MySQL</option>
+                        <option value="postgresql">PostgreSQL</option>
+                        <option value="sqlserver">SQL Server</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="host">主机地址:</label>
+                    <input type="text" id="host" placeholder="localhost">
+                </div>
+                <div class="form-group">
+                    <label for="port">端口:</label>
+                    <input type="number" id="port" placeholder="3306">
+                </div>
+                <div class="form-group">
+                    <label for="database">数据库名:</label>
+                    <input type="text" id="database" placeholder="数据库名称">
+                </div>
+                <div class="form-group">
+                    <label for="username">用户名:</label>
+                    <input type="text" id="username" placeholder="用户名">
+                </div>
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" placeholder="密码">
+                </div>
+                <button id="connectBtn" class="btn-primary">连接数据库</button>
+            </div>
+
+            <!-- 查询构建器 -->
+            <div class="section">
+                <h2>查询构建器</h2>
+                
+                <!-- 表选择 -->
+                <div class="form-group">
+                    <label for="tableSelect">选择表:</label>
+                    <select id="tableSelect" disabled>
+                        <option value="">请先连接数据库</option>
+                    </select>
+                </div>
+
+                <!-- 字段选择 -->
+                <div class="form-group">
+                    <label>选择字段:</label>
+                    <div id="fieldsContainer" class="fields-container"></div>
+                </div>
+
+                <!-- 条件构建 -->
+                <div class="form-group">
+                    <label>条件筛选:</label>
+                    <div id="conditionsContainer" class="conditions-container">
+                        <div class="condition-row">
+                            <select class="condition-field" disabled>
+                                <option value="">请先选择表</option>
+                            </select>
+                            <select class="condition-operator">
+                                <option value="=">=</option>
+                                <option value="!=">!=</option>
+                                <option value=">">></option>
+                                <option value="<"><</option>
+                                <option value=">=">>=</option>
+                                <option value="<="><=</option>
+                                <option value="LIKE">LIKE</option>
+                                <option value="IN">IN</option>
+                            </select>
+                            <input type="text" class="condition-value" placeholder="值">
+                            <button class="btn-remove-condition">×</button>
+                        </div>
+                    </div>
+                    <button id="addConditionBtn" class="btn-secondary">添加条件</button>
+                </div>
+
+                <!-- 排序 -->
+                <div class="form-group">
+                    <label>排序:</label>
+                    <div id="orderContainer" class="order-container">
+                        <div class="order-row">
+                            <select class="order-field" disabled>
+                                <option value="">请先选择表</option>
+                            </select>
+                            <select class="order-direction">
+                                <option value="ASC">升序 (ASC)</option>
+                                <option value="DESC">降序 (DESC)</option>
+                            </select>
+                            <button class="btn-remove-order">×</button>
+                        </div>
+                    </div>
+                    <button id="addOrderBtn" class="btn-secondary">添加排序</button>
+                </div>
+
+                <!-- 分组和统计 -->
+                <div class="form-group">
+                    <label>分组和统计:</label>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="groupByCheckbox"> 启用分组
+                        </label>
+                    </div>
+                    <div id="groupByContainer" class="groupby-container" style="display: none;">
+                        <select id="groupByField" disabled>
+                            <option value="">请先选择表</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="countCheckbox"> COUNT统计
+                        </label>
+                        <label>
+                            <input type="checkbox" id="sumCheckbox"> SUM统计
+                        </label>
+                        <label>
+                            <input type="checkbox" id="avgCheckbox"> AVG统计
+                        </label>
+                    </div>
+                </div>
+
+                <button id="generateSqlBtn" class="btn-primary" disabled>生成SQL</button>
+            </div>
+
+            <!-- SQL结果显示 -->
+            <div class="section">
+                <h2>生成的SQL语句</h2>
+                <div class="sql-output">
+                    <textarea id="sqlOutput" readonly placeholder="生成的SQL语句将显示在这里"></textarea>
+                </div>
+                <button id="copySqlBtn" class="btn-secondary" disabled>复制SQL</button>
+                <button id="executeSqlBtn" class="btn-primary" disabled>执行查询</button>
+            </div>
+
+            <!-- 查询结果 -->
+            <div class="section">
+                <h2>查询结果</h2>
+                <div id="resultContainer" class="result-container">
+                    <p>查询结果将显示在这里</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

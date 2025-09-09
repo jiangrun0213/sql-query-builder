@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易SQL查询生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .sql-output {
+            margin: 20px 0;
+        }
+        
+        .sql-output textarea {
+            width: 100%;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .message.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .message.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+        
+        .condition-row,
+        .order-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .condition-row select,
+        .order-row select {
+            flex: 1;
+        }
+        
+        .condition-row input {
+            flex: 2;
+        }
+        
+        .btn-remove {
+            background: #fc8181;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+        }
+        
+        .help-text {
+            margin-top: 10px;
+            padding: 12px;
+            background-color: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            border-radius: 4px;
+        }
+        
+        .help-text small {
+            color: #475569;
+            line-height: 1.5;
+        }
+        
+        .help-text strong {
+            color: #0ea5e9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>简易SQL查询生成器</h1>
+            <p>根据输入信息生成SQL查询命令</p>
+        </header>
+
+        <div class="form-group">
+            <label for="tableName">主表名称:</label>
+            <input type="text" id="tableName" placeholder="输入主表名称（例如：users）">
+        </div>
+
+        <div class="form-group">
+            <label>关联表设置:</label>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="enableJoin"> 启用表关联 (JOIN)
+                </label>
+            </div>
+            <div id="joinContainer" style="display: none;">
+                <div class="form-group">
+                    <label for="joinTable">关联表名称:</label>
+                    <input type="text" id="joinTable" placeholder="输入关联表名称（例如：orders）">
+                </div>
+                <div class="form-group">
+                    <label for="joinType">关联类型:</label>
+                    <select id="joinType">
+                        <option value="INNER JOIN">INNER JOIN (内连接)</option>
+                        <option value="LEFT JOIN">LEFT JOIN (左连接)</option>
+                        <option value="RIGHT JOIN">RIGHT JOIN (右连接)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="joinCondition">关联条件:</label>
+                    <input type="text" id="joinCondition" placeholder="主表字段 = 关联表字段（例如：users.id = orders.user_id）">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="fields">查询字段:</label>
+            <input type="text" id="fields" placeholder="输入字段名称，多个字段用逗号分隔（例如：id,name,email）">
+            <small>留空表示查询所有字段（SELECT *）</small>
+        </div>
+
+        <div class="form-group">
+            <label>条件筛选:</label>
+            <div id="conditionsContainer">
+                <div class="condition-row">
+                    <input type="text" class="condition-field" placeholder="字段名">
+                    <select class="condition-operator">
+                        <option value="=">=</option>
+                        <option value="!=">!=</option>
+                        <option value=">">></option>
+                        <option value="<"><</option>
+                        <option value=">=">>=</option>
+                        <option value="<="><=</option>
+                        <option value="LIKE">LIKE</option>
+                        <option value="IN">IN</option>
+                    </select>
+                    <input type="text" class="condition-value" placeholder="值">
+                    <button class="btn-remove" onclick="removeConditionRow(this)">×</button>
+                </div>
+            </div>
+            <button class="btn-secondary" onclick="addConditionRow()">添加条件</button>
+        </div>
+
+        <div class="form-group">
+            <label>排序设置:</label>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="enableOrder"> 启用排序
+                </label>
+            </div>
+            <div id="orderContainer" style="display: none;">
+                <div class="order-row">
+                    <input type="text" class="order-field" placeholder="排序字段名称（例如：name）">
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="orderDirection" class="order-direction" value="ASC" checked>
+                            升序 (ASC)
+                        </label>
+                        <label>
+                            <input type="radio" name="orderDirection" class="order-direction" value="DESC">
+                            降序 (DESC)
+                        </label>
+                    </div>
+                    <button class="btn-remove" onclick="removeOrderRow(this)">×</button>
+                </div>
+            </div>
+            <button class="btn-secondary" onclick="addOrderRow()" style="display: none;" id="addOrderBtn">添加排序字段</button>
+        </div>
+
+        <div class="form-group">
+            <label>分组和统计:</label>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="groupByCheckbox"> 启用分组 (GROUP BY)
+                </label>
+                <label>
+                    <input type="checkbox" id="countCheckbox"> COUNT统计 (计数)
+                </label>
+                <label>
+                    <input type="checkbox" id="sumCheckbox"> SUM统计 (求和)
+                </label>
+                <label>
+                    <input type="checkbox" id="avgCheckbox"> AVG统计 (平均值)
+                </label>
+            </div>
+            <input type="text" id="groupByField" placeholder="输入分组字段名称（例如：category）" style="display: none;">
+            <input type="text" id="sumField" placeholder="输入求和字段名称（例如：price）" style="display: none;">
+            <input type="text" id="avgField" placeholder="输入平均值字段名称（例如：score）" style="display: none;">
+            <div class="help-text">
+                <small>
+                    <strong>统计功能说明：</strong><br>
+                    • COUNT统计：计算记录数量<br>
+                    • SUM统计：计算数值字段的总和<br>
+                    • AVG统计：计算数值字段的平均值<br>
+                    • 分组：按指定字段分组后进行统计
+                </small>
+            </div>
+            <div class="help-text" id="joinHelpText" style="display: none;">
+                <small>
+                    <strong>表关联(JOIN)功能说明：</strong><br>
+                    • <strong>INNER JOIN (内连接)</strong>：只返回两个表中匹配的记录<br>
+                    • <strong>LEFT JOIN (左连接)</strong>：返回左表所有记录 + 右表匹配的记录<br>
+                    • <strong>RIGHT JOIN (右连接)</strong>：返回右表所有记录 + 左表匹配的记录<br>
+                    • <strong>关联条件格式</strong>：主表.字段 = 关联表.字段（例如：users.id = orders.user_id）<br>
+                    • <strong>查询字段格式</strong>：表名.字段名（例如：users.name, orders.total_amount）
+                </small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="limit">结果限制:</label>
+            <input type="number" id="limit" placeholder="返回结果数量（例如：10）">
+        </div>
+
+        <button class="btn-primary" onclick="generateSQL()">生成SQL</button>
+        <button class="btn-secondary" onclick="copySQL()" id="copyBtn" disabled>复制SQL</button>
+        <button class="btn-secondary" onclick="clearForm()">清空表单</button>
+
+        <div class="sql-output">
+            <label>生成的SQL语句:</label>
+            <textarea id="sqlOutput" readonly placeholder="生成的SQL语句将显示在这里"></textarea>
+        </div>
+    </div>
+
+    <script>
+        // 初始化字段显示
+        document.getElementById('groupByCheckbox').addEventListener('change', function() {
+            document.getElementById('groupByField').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        document.getElementById('sumCheckbox').addEventListener('change', function() {
+            document.getElementById('sumField').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        document.getElementById('avgCheckbox').addEventListener('change', function() {
+            document.getElementById('avgField').style.display = this.checked ? 'block' : 'none';
+        });
+
+        // 初始化关联表功能
+        document.getElementById('enableJoin').addEventListener('change', function() {
+            const joinContainer = document.getElementById('joinContainer');
+            const joinHelpText = document.getElementById('joinHelpText');
+            if (this.checked) {
+                joinContainer.style.display = 'block';
+                joinHelpText.style.display = 'block';
+            } else {
+                joinContainer.style.display = 'none';
+                joinHelpText.style.display = 'none';
+            }
+        });
+
+        // 初始化排序功能
+        document.getElementById('enableOrder').addEventListener('change', function() {
+            const orderContainer = document.getElementById('orderContainer');
+            const addOrderBtn = document.getElementById('addOrderBtn');
+            
+            if (this.checked) {
+                orderContainer.style.display = 'block';
+                addOrderBtn.style.display = 'inline-block';
+            } else {
+                orderContainer.style.display = 'none';
+                addOrderBtn.style.display = 'none';
+                // 清空排序字段
+                document.querySelectorAll('.order-row').forEach(row => {
+                    if (row.parentElement.children.length > 1) {
+                        row.remove();
+                    }
+                });
+            }
+        });
+
+        // 添加条件行
+        function addConditionRow() {
+            const row = document.createElement('div');
+            row.className = 'condition-row';
+            row.innerHTML = `
+                <input type="text" class="condition-field" placeholder="字段名">
+                <select class="condition-operator">
+                    <option value="=">=</option>
+                    <option value="!=">!=</option>
+                    <option value=">">></option>
+                    <option value="<"><</option>
+                    <option value=">=">>=</option>
+                    <option value="<="><=</option>
+                    <option value="LIKE">LIKE</option>
+                    <option value="IN">IN</option>
+                </select>
+                <input type="text" class="condition-value" placeholder="值">
+                <button class="btn-remove" onclick="removeConditionRow(this)">×</button>
+            `;
+            document.getElementById('conditionsContainer').appendChild(row);
+        }
+
+        // 移除条件行
+        function removeConditionRow(button) {
+            if (document.getElementById('conditionsContainer').children.length > 1) {
+                button.parentElement.remove();
+            }
+        }
+
+        // 添加排序行
+        function addOrderRow() {
+            const row = document.createElement('div');
+            row.className = 'order-row';
+            row.innerHTML = `
+                <input type="text" class="order-field" placeholder="排序字段名称（例如：name）">
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="orderDirection${Date.now()}" class="order-direction" value="ASC" checked>
+                        升序 (ASC)
+                    </label>
+                    <label>
+                        <input type="radio" name="orderDirection${Date.now()}" class="order-direction" value="DESC">
+                        降序 (DESC)
+                    </label>
+                </div>
+                <button class="btn-remove" onclick="removeOrderRow(this)">×</button>
+            `;
+            document.getElementById('orderContainer').appendChild(row);
+        }
+
+        // 移除排序行
+        function removeOrderRow(button) {
+            if (document.getElementById('orderContainer').children.length > 1) {
+                button.parentElement.remove();
+            }
+        }
+
+        // 生成SQL语句
+        function generateSQL() {
+            const tableName = document.getElementById('tableName').value.trim();
+            if (!tableName) {
+                showMessage('请输入表名称', 'error');
+                return;
+            }
+
+            let sql = 'SELECT ';
+            
+            // 处理字段
+            const fields = document.getElementById('fields').value.trim();
+            if (fields) {
+                sql += fields;
+            } else {
+                sql += '*';
+            }
+            
+            // 处理统计函数
+            const aggregates = [];
+            if (document.getElementById('countCheckbox').checked) {
+                aggregates.push('COUNT(*) as count');
+            }
+            if (document.getElementById('sumCheckbox').checked) {
+                const sumField = document.getElementById('sumField').value.trim();
+                if (sumField) {
+                    aggregates.push(`SUM(${sumField}) as total_${sumField}`);
+                }
+            }
+            if (document.getElementById('avgCheckbox').checked) {
+                const avgField = document.getElementById('avgField').value.trim();
+                if (avgField) {
+                    aggregates.push(`AVG(${avgField}) as avg_${avgField}`);
+                }
+            }
+            
+            if (aggregates.length > 0) {
+                if (fields) {
+                    sql = sql.replace('SELECT ', 'SELECT ') + ', ' + aggregates.join(', ');
+                } else {
+                    sql = 'SELECT ' + aggregates.join(', ');
+                }
+            }
+
+            sql += ` FROM ${tableName}`;
+
+            // 处理关联表
+            if (document.getElementById('enableJoin').checked) {
+                const joinTable = document.getElementById('joinTable').value.trim();
+                const joinType = document.getElementById('joinType').value;
+                const joinCondition = document.getElementById('joinCondition').value.trim();
+                
+                if (joinTable && joinCondition) {
+                    sql += ` ${joinType} ${joinTable} ON ${joinCondition}`;
+                }
+            }
+
+            // 处理条件
+            const conditions = [];
+            document.querySelectorAll('.condition-row').forEach(row => {
+                const field = row.querySelector('.condition-field').value.trim();
+                const operator = row.querySelector('.condition-operator').value;
+                const value = row.querySelector('.condition-value').value.trim();
+                
+                if (field && value) {
+                    let conditionValue = value;
+                    if (operator === 'LIKE') {
+                        conditionValue = `'%${value}%'`;
+                    } else if (operator === 'IN') {
+                        conditionValue = `(${value.split(',').map(v => `'${v.trim()}'`).join(',')})`;
+                    } else if (isNaN(value)) {
+                        conditionValue = `'${value}'`;
+                    }
+                    conditions.push(`${field} ${operator} ${conditionValue}`);
+                }
+            });
+            
+            if (conditions.length > 0) {
+                sql += ` WHERE ${conditions.join(' AND ')}`;
+            }
+
+            // 处理分组
+            if (document.getElementById('groupByCheckbox').checked) {
+                const groupByField = document.getElementById('groupByField').value.trim();
+                if (groupByField) {
+                    sql += ` GROUP BY ${groupByField}`;
+                }
+            }
+
+            // 处理排序
+            const orders = [];
+            document.querySelectorAll('.order-row').forEach(row => {
+                const field = row.querySelector('.order-field').value.trim();
+                const direction = row.querySelector('.order-direction:checked').value;
+                
+                if (field) {
+                    orders.push(`${field} ${direction}`);
+                }
+            });
+            
+            if (orders.length > 0) {
+                sql += ` ORDER BY ${orders.join(', ')}`;
+            }
+
+            // 处理限制
+            const limit = document.getElementById('limit').value.trim();
+            if (limit) {
+                sql += ` LIMIT ${limit}`;
+            }
+
+            document.getElementById('sqlOutput').value = sql;
+            document.getElementById('copyBtn').disabled = false;
+            showMessage('SQL生成成功', 'success');
+        }
+
+        // 复制SQL
+        function copySQL() {
+            const sqlOutput = document.getElementById('sqlOutput');
+            sqlOutput.select();
+            document.execCommand('copy');
+            showMessage('SQL已复制到剪贴板', 'success');
+        }
+
+        // 清空表单
+        function clearForm() {
+            document.getElementById('tableName').value = '';
+            document.getElementById('fields').value = '';
+            document.getElementById('conditionsContainer').innerHTML = `
+                <div class="condition-row">
+                    <input type="text" class="condition-field" placeholder="字段名">
+                    <select class="condition-operator">
+                        <option value="=">=</option>
+                        <option value="!=">!=</option>
+                        <option value=">">></option>
+                        <option value="<"><</option>
+                        <option value=">=">>=</option>
+                        <option value="<="><=</option>
+                        <option value="LIKE">LIKE</option>
+                        <option value="IN">IN</option>
+                    </select>
+                    <input type="text" class="condition-value" placeholder="值">
+                    <button class="btn-remove" onclick="removeConditionRow(this)">×</button>
+                </div>
+            `;
+            document.getElementById('enableOrder').checked = false;
+            document.getElementById('orderContainer').innerHTML = `
+                <div class="order-row">
+                    <input type="text" class="order-field" placeholder="排序字段名称（例如：name）">
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="orderDirection" class="order-direction" value="ASC" checked>
+                            升序 (ASC)
+                        </label>
+                        <label>
+                            <input type="radio" name="orderDirection" class="order-direction" value="DESC">
+                            降序 (DESC)
+                        </label>
+                    </div>
+                    <button class="btn-remove" onclick="removeOrderRow(this)">×</button>
+                </div>
+            `;
+            document.getElementById('orderContainer').style.display = 'none';
+            document.getElementById('addOrderBtn').style.display = 'none';
+            document.getElementById('groupByCheckbox').checked = false;
+            document.getElementById('countCheckbox').checked = false;
+            document.getElementById('sumCheckbox').checked = false;
+            document.getElementById('avgCheckbox').checked = false;
+            document.getElementById('groupByField').value = '';
+            document.getElementById('groupByField').style.display = 'none';
+            document.getElementById('sumField').value = '';
+            document.getElementById('sumField').style.display = 'none';
+            document.getElementById('avgField').value = '';
+            document.getElementById('avgField').style.display = 'none';
+            document.getElementById('enableJoin').checked = false;
+            document.getElementById('joinContainer').style.display = 'none';
+            document.getElementById('joinHelpText').style.display = 'none';
+            document.getElementById('joinTable').value = '';
+            document.getElementById('joinCondition').value = '';
+            document.getElementById('limit').value = '';
+            document.getElementById('sqlOutput').value = '';
+            document.getElementById('copyBtn').disabled = true;
+            showMessage('表单已清空', 'success');
+        }
+
+        // 显示消息
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            
+            document.querySelector('.container').prepend(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
